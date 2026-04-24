@@ -259,7 +259,7 @@ class XCPToolWindow(QMainWindow):
         layout.addWidget(QLabel("COM口:"), 0, 0)
         self.port_combo = QComboBox()
         self.port_combo.setView(QListView())
-        self.port_combo.setMinimumWidth(120)
+        self.port_combo.setMinimumWidth(280)
         layout.addWidget(self.port_combo, 0, 1)
         
         self.refresh_btn = QPushButton("刷新")
@@ -342,25 +342,25 @@ class XCPToolWindow(QMainWindow):
         self.write_eep_btn.setEnabled(False)
         btn_layout.addWidget(self.write_eep_btn)
         
-        self.factory_reset_btn = QPushButton("恢复出厂")
-        self.factory_reset_btn.clicked.connect(self.factory_reset)
-        self.factory_reset_btn.setEnabled(False)
-        self.factory_reset_btn.setStyleSheet(
-            "QPushButton { background-color: #ffb347; border: 1px solid #f0a126; color: #ffffff; }"
-            "QPushButton:hover { background-color: #ffc165; border: 1px solid #1777ff; }"
-            "QPushButton:disabled { background-color: #d8e2ee; color: #8ea0b5; border: 1px solid #c4d0de; }"
-        )
-        btn_layout.addWidget(self.factory_reset_btn)
+        # self.factory_reset_btn = QPushButton("恢复出厂")
+        # self.factory_reset_btn.clicked.connect(self.factory_reset)
+        # self.factory_reset_btn.setEnabled(False)
+        # self.factory_reset_btn.setStyleSheet(
+        #     "QPushButton { background-color: #ffb347; border: 1px solid #f0a126; color: #ffffff; }"
+        #     "QPushButton:hover { background-color: #ffc165; border: 1px solid #1777ff; }"
+        #     "QPushButton:disabled { background-color: #d8e2ee; color: #8ea0b5; border: 1px solid #c4d0de; }"
+        # )
+        # btn_layout.addWidget(self.factory_reset_btn)
         
-        self.reset_mcu_btn = QPushButton("复位MCU")
-        self.reset_mcu_btn.clicked.connect(self.reset_mcu)
-        self.reset_mcu_btn.setEnabled(False)
-        self.reset_mcu_btn.setStyleSheet(
-            "QPushButton { background-color: #6c8ef5; border: 1px solid #5479eb; color: #ffffff; }"
-            "QPushButton:hover { background-color: #84a1ff; border: 1px solid #1777ff; }"
-            "QPushButton:disabled { background-color: #d8e2ee; color: #8ea0b5; border: 1px solid #c4d0de; }"
-        )
-        btn_layout.addWidget(self.reset_mcu_btn)
+        # self.reset_mcu_btn = QPushButton("复位MCU")
+        # self.reset_mcu_btn.clicked.connect(self.reset_mcu)
+        # self.reset_mcu_btn.setEnabled(False)
+        # self.reset_mcu_btn.setStyleSheet(
+        #     "QPushButton { background-color: #6c8ef5; border: 1px solid #5479eb; color: #ffffff; }"
+        #     "QPushButton:hover { background-color: #84a1ff; border: 1px solid #1777ff; }"
+        #     "QPushButton:disabled { background-color: #d8e2ee; color: #8ea0b5; border: 1px solid #c4d0de; }"
+        # )
+        # btn_layout.addWidget(self.reset_mcu_btn)
         
         layout.addLayout(btn_layout, 1, 0, 1, 4)
         
@@ -497,8 +497,8 @@ class XCPToolWindow(QMainWindow):
         self.read_eep_btn.setEnabled(connected and unlocked)
         self.read_var_btn.setEnabled(connected and unlocked)
         self.write_eep_btn.setEnabled(connected and unlocked)
-        self.factory_reset_btn.setEnabled(connected and unlocked)
-        self.reset_mcu_btn.setEnabled(connected and unlocked)
+        # self.factory_reset_btn.setEnabled(connected and unlocked)
+        # self.reset_mcu_btn.setEnabled(connected and unlocked)
         self.send_btn.setEnabled(connected and unlocked)
         
         self.port_combo.setEnabled(not connected)

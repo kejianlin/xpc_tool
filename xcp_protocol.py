@@ -286,10 +286,10 @@ class XCPProtocol:
         if response[3] != 0x81:
             return False, "响应状态不是ACK(0x81)", b''
 
-        rx_len = response[2]
-        expected_total_len = rx_len + 5  # AB C9 Len 81 [Len bytes] CHK
-        if len(response) != expected_total_len:
-            return False, f"响应长度不匹配，期望{expected_total_len}字节，实际{len(response)}字节", b''
+        # rx_len = response[2]
+        # expected_total_len = rx_len + 5  # AB C9 Len 81 [Len bytes] CHK
+        # if len(response) != expected_total_len:
+        #     return False, f"响应长度不匹配，期望{expected_total_len}字节，实际{len(response)}字节", b''
 
         chk = response[-1]
         calc_chk = self._calc_chk(response[:-1])
@@ -320,6 +320,42 @@ class XCPProtocol:
         # CpuId按协议记录，不作为失败条件（避免后续多CPU场景误判）
         _ = cpu_id
         return True, "", data
+
+    def _parse_c9_write_ack(self, response: bytes, expected_mem_type: int,
+                            expected_addr_words: int, expected_size_bytes: int) -> Tuple[bool, str]:
+        """
+        解析写命令ACK：
+        AB C9 0B 81 RespCode CpuId MemType Addr4B Size4B CHK
+        RespCode: 58/57=成功, 4E=失败
+        """
+        if len(response) < 16:
+            return False, "响应长度不足"
+        if response[0] != 0xAB or response[1] != 0xC9:
+            return False, "响应头错误"
+        if response[2] != 0x0B:
+            return False, f"响应长度字段错误({response[2]:02X})"
+        if response[3] != 0x81:
+            return False, "非ACK响应"
+
+        resp_code = response[4]
+        mem_type = response[6]
+        addr_bytes = int.from_bytes(response[7:11], byteorder='little', signed=False)
+        size_bytes = int.from_bytes(response[11:15], byteorder='little', signed=False)
+
+        if mem_type != expected_mem_type:
+            return False, f"MemType不匹配(期望{expected_mem_type:02X}, 实际{mem_type:02X})"
+
+        expected_addr = expected_addr_words * 2
+        if addr_bytes != expected_addr:
+            return False, f"响应地址不匹配(期望{expected_addr}, 实际{addr_bytes})"
+        if size_bytes != expected_size_bytes:
+            return False, f"响应长度不匹配(期望{expected_size_bytes}, 实际{size_bytes})"
+
+        if resp_code in (0x58, 0x57):
+            return True, f"RespCode: {resp_code:02X}"
+        if resp_code == 0x4E:
+            return False, "设备返回RespCode=4E"
+        return False, f"未知RespCode={resp_code:02X}"
     
     def send_unlock(self) -> Tuple[bool, str, str, str]:
         """
@@ -490,21 +526,15 @@ class XCPProtocol:
             return False, "写入失败，无响应", tx_hex, "(无响应)"
 
         rx_hex = self._bytes_to_hex(response)
-        # 写入ACK做基础格式校验，兼容不同设备的返回内容差异
-        if len(response) < 7:
-            return False, "写入失败: 响应长度不足", tx_hex, rx_hex
-        if response[0] != 0xAB or response[1] != 0xC9:
-            return False, "写入失败: 响应头错误", tx_hex, rx_hex
-        if response[3] != 0x81:
-            return False, "写入失败: 非ACK响应", tx_hex, rx_hex
-        if response[4] != self.FUNC_C9_WRITE_MEM:
-            return False, "写入失败: FuncCode不匹配", tx_hex, rx_hex
-        if len(response) >= 7 and response[6] != self.MEM_TYPE_EEP:
-            return False, "写入失败: MemType不匹配", tx_hex, rx_hex
-        if self._calc_chk(response[:-1]) != response[-1]:
-            return False, "写入失败: CHK校验失败", tx_hex, rx_hex
-
-        return True, f"写入成功\n地址(word): {address}\n数据(word): {data}", tx_hex, rx_hex
+        ok, detail = self._parse_c9_write_ack(
+            response=response,
+            expected_mem_type=self.MEM_TYPE_EEP,
+            expected_addr_words=address,
+            expected_size_bytes=2
+        )
+        if not ok:
+            return False, f"写入失败: {detail}", tx_hex, rx_hex
+        return True, f"写入成功\n地址(word): {address}\n数据(word): {data}\n{detail}", tx_hex, rx_hex
     
     def write_conf(self, pn: str, sn: str, kva: str) -> Tuple[bool, str, str, str]:
         """
@@ -557,18 +587,14 @@ class XCPProtocol:
             rx_hex = self._bytes_to_hex(response)
             rx_list.append(f"{label}: {rx_hex}")
 
-            if len(response) < 7:
-                return False, f"{label}写入失败: 响应长度不足", " | ".join(tx_list), " | ".join(rx_list)
-            if response[0] != 0xAB or response[1] != 0xC9:
-                return False, f"{label}写入失败: 响应头错误", " | ".join(tx_list), " | ".join(rx_list)
-            if response[3] != 0x81:
-                return False, f"{label}写入失败: 非ACK响应", " | ".join(tx_list), " | ".join(rx_list)
-            if response[4] != self.FUNC_C9_WRITE_MEM:
-                return False, f"{label}写入失败: FuncCode不匹配", " | ".join(tx_list), " | ".join(rx_list)
-            if len(response) >= 7 and response[6] != self.MEM_TYPE_EEP:
-                return False, f"{label}写入失败: MemType不匹配", " | ".join(tx_list), " | ".join(rx_list)
-            if self._calc_chk(response[:-1]) != response[-1]:
-                return False, f"{label}写入失败: CHK校验失败", " | ".join(tx_list), " | ".join(rx_list)
+            ok, detail = self._parse_c9_write_ack(
+                response=response,
+                expected_mem_type=self.MEM_TYPE_EEP,
+                expected_addr_words=addr_word,
+                expected_size_bytes=len(payload)
+            )
+            if not ok:
+                return False, f"{label}写入失败: {detail}", " | ".join(tx_list), " | ".join(rx_list)
 
         kva_tx = self._build_c9_write_kva_frame(kva=kva_value, sn_20b=sn_data, pn_20b=pn_data)
         kva_tx_hex = self._bytes_to_hex(kva_tx)
@@ -579,18 +605,14 @@ class XCPProtocol:
         kva_rx_hex = self._bytes_to_hex(response)
         rx_list.append(f"KVA: {kva_rx_hex}")
 
-        if len(response) < 7:
-            return False, "KVA写入失败: 响应长度不足", " | ".join(tx_list), " | ".join(rx_list)
-        if response[0] != 0xAB or response[1] != 0xC9:
-            return False, "KVA写入失败: 响应头错误", " | ".join(tx_list), " | ".join(rx_list)
-        if response[3] != 0x81:
-            return False, "KVA写入失败: 非ACK响应", " | ".join(tx_list), " | ".join(rx_list)
-        if response[4] != self.FUNC_C9_WRITE_MEM:
-            return False, "KVA写入失败: FuncCode不匹配", " | ".join(tx_list), " | ".join(rx_list)
-        if len(response) >= 7 and response[6] != self.MEM_TYPE_EEP:
-            return False, "KVA写入失败: MemType不匹配", " | ".join(tx_list), " | ".join(rx_list)
-        if self._calc_chk(response[:-1]) != response[-1]:
-            return False, "KVA写入失败: CHK校验失败", " | ".join(tx_list), " | ".join(rx_list)
+        ok, detail = self._parse_c9_write_ack(
+            response=response,
+            expected_mem_type=self.MEM_TYPE_EEP,
+            expected_addr_words=self.KVA_ADDR_WORD,
+            expected_size_bytes=4
+        )
+        if not ok:
+            return False, f"KVA写入失败: {detail}", " | ".join(tx_list), " | ".join(rx_list)
 
         return True, f"参数写入成功\nP/N: {pn}\nS/N: {sn}\nKVA: {kva_value}", " | ".join(tx_list), " | ".join(rx_list)
     

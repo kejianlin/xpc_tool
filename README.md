@@ -43,6 +43,26 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## 打包EXE
+
+1. 安装打包工具：
+
+```bash
+pip install pyinstaller
+```
+
+2. 在项目根目录执行：
+
+```bash
+build_exe.bat
+```
+
+3. 生成文件：
+
+```text
+dist/XCPTool.exe
+```
+
 ## 使用说明
 
 1. 选择正确的COM口和波特率，点击"连接"
