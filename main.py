@@ -134,7 +134,7 @@ class XCPToolWindow(QMainWindow):
                 background-color: #1777ff;
                 color: white;
                 border: 1px solid #0d5fd6;
-                padding: 6px 12px;
+                padding: 6px 6px;
                 border-radius: 3px;
                 font-weight: bold;
                 min-width: 70px;
@@ -319,13 +319,19 @@ class XCPToolWindow(QMainWindow):
         self.addr_input.setPlaceholderText("如: 9101")
         layout.addWidget(self.addr_input, 0, 1)
         
-        layout.addWidget(QLabel("参数:"), 0, 2)
+        layout.addWidget(QLabel("数据/长度:"), 0, 2)
         self.param_input = QLineEdit()
         self.param_input.setPlaceholderText("如: 42240")
         layout.addWidget(self.param_input, 0, 3)
         
         btn_layout = QHBoxLayout()
+        # btn_layout.setSpacing(5)
         
+        self.read_var_btn = QPushButton("读 VAR")
+        self.read_var_btn.clicked.connect(self.read_var)
+        self.read_var_btn.setEnabled(False)
+        btn_layout.addWidget(self.read_var_btn)
+
         self.read_eep_btn = QPushButton("读 EEP")
         self.read_eep_btn.clicked.connect(self.read_eeprom)
         self.read_eep_btn.setEnabled(False)
@@ -489,6 +495,7 @@ class XCPToolWindow(QMainWindow):
         self.verify_btn.setEnabled(connected)
         
         self.read_eep_btn.setEnabled(connected and unlocked)
+        self.read_var_btn.setEnabled(connected and unlocked)
         self.write_eep_btn.setEnabled(connected and unlocked)
         self.factory_reset_btn.setEnabled(connected and unlocked)
         self.reset_mcu_btn.setEnabled(connected and unlocked)
@@ -545,7 +552,31 @@ class XCPToolWindow(QMainWindow):
             return
         
         self.log(f"读取EEP: 地址={addr}, 长度={length}")
-        success, msg = self.xcp.read_eeprom(addr, length)
+        success, msg, tx_data, rx_data = self.xcp.read_eeprom(addr, length)
+        if tx_data:
+            self.log(f"TX >> {tx_data}", "INFO")
+        if rx_data:
+            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        if success:
+            self.log(msg, "SUCCESS")
+        else:
+            self.log(msg, "ERROR")
+
+    def read_var(self):
+        """读取VAR"""
+        try:
+            addr = int(self.addr_input.text())
+            length = int(self.param_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "警告", "请输入有效的地址和参数")
+            return
+
+        self.log(f"读取VAR: 地址={addr}, 长度={length}")
+        success, msg, tx_data, rx_data = self.xcp.read_var(addr, length)
+        if tx_data:
+            self.log(f"TX >> {tx_data}", "INFO")
+        if rx_data:
+            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
         else:
@@ -564,7 +595,11 @@ class XCPToolWindow(QMainWindow):
         self.update_status("正在写入，请稍候...")
         QApplication.processEvents()
         
-        success, msg = self.xcp.write_eeprom(addr, data)
+        success, msg, tx_data, rx_data = self.xcp.write_eeprom(addr, data)
+        if tx_data:
+            self.log(f"TX >> {tx_data}", "INFO")
+        if rx_data:
+            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
             self.update_status("写入完成")
@@ -583,7 +618,11 @@ class XCPToolWindow(QMainWindow):
             self.update_status("正在恢复出厂设置，请稍候约10秒...")
             QApplication.processEvents()
             
-            success, msg = self.xcp.factory_reset()
+            success, msg, tx_data, rx_data = self.xcp.factory_reset()
+            if tx_data:
+                self.log(f"TX >> {tx_data}", "INFO")
+            if rx_data:
+                self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
             if success:
                 self.log(msg, "SUCCESS")
                 self.update_status("恢复出厂设置完成")
@@ -602,7 +641,11 @@ class XCPToolWindow(QMainWindow):
             self.update_status("正在复位MCU...")
             QApplication.processEvents()
             
-            success, msg = self.xcp.reset_mcu()
+            success, msg, tx_data, rx_data = self.xcp.reset_mcu()
+            if tx_data:
+                self.log(f"TX >> {tx_data}", "INFO")
+            if rx_data:
+                self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
             if success:
                 self.log(msg, "SUCCESS")
                 self.update_status("MCU复位完成")
@@ -619,8 +662,8 @@ class XCPToolWindow(QMainWindow):
         if not pn:
             QMessageBox.warning(self, "警告", "请输入P/N码")
             return
-        if len(sn) != 14:
-            QMessageBox.warning(self, "警告", "S/N必须为14位")
+        if not sn:
+            QMessageBox.warning(self, "警告", "请输入S/N")
             return
         if not kva:
             QMessageBox.warning(self, "警告", "请输入KVA功率")
@@ -630,7 +673,11 @@ class XCPToolWindow(QMainWindow):
         self.update_status("正在写入参数...")
         QApplication.processEvents()
         
-        success, msg = self.xcp.write_conf(pn, sn, kva)
+        success, msg, tx_data, rx_data = self.xcp.write_conf(pn, sn, kva)
+        if tx_data:
+            self.log(f"TX >> {tx_data}", "INFO")
+        if rx_data:
+            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
             self.update_status("参数写入完成")
