@@ -22,7 +22,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='XCPTool',
+    name='CPSY_XCP_Tool',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

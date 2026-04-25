@@ -39,7 +39,7 @@ class XCPToolWindow(QMainWindow):
         
     def init_ui(self):
         """初始化界面"""
-        self.setWindowTitle("XCP tool")
+        self.setWindowTitle("CPSY XCP tool")
         window_icon = self._load_logo_icon()
         if not window_icon.isNull():
             self.setWindowIcon(window_icon)
@@ -438,6 +438,9 @@ class XCPToolWindow(QMainWindow):
         }
         color = color_map.get(level, "#2ecc71")
         safe_message = html.escape(message)
+        if "\n" in message:
+            # 多行日志保留换行和对齐空格
+            safe_message = safe_message.replace(" ", "&nbsp;").replace("\n", "<br>")
         
         self.log_text.append(f'<span style="color: #7f8c8d;">[{timestamp}]</span> '
                             f'<span style="color: {color};">{safe_message}</span>')

@@ -60,7 +60,7 @@ build_exe.bat
 3. 生成文件：
 
 ```text
-dist/XCPTool.exe
+dist/CPSY_XCP_Tool.exe
 ```
 
 ## 使用说明

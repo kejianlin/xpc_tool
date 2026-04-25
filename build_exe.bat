@@ -18,7 +18,7 @@ python -m PyInstaller ^
   --windowed ^
   --hidden-import PyQt5.sip ^
   --icon "logo.ico" ^
-  --name XCPTool ^
+  --name CPSY_XCP_Tool ^
   --add-data "logo.png;." ^
   main.py
 
@@ -28,5 +28,5 @@ if errorlevel 1 (
 )
 
 echo [3/3] Done.
-echo EXE: %~dp0dist\XCPTool.exe
+echo EXE: %~dp0dist\CPSY_XCP_Tool.exe
 exit /b 0

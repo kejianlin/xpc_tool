@@ -150,6 +150,19 @@ class XCPProtocol:
         return ' '.join(f'{b:02X}' for b in data)
 
     @staticmethod
+    def _format_word_lines(start_addr_word: int, data: bytes) -> str:
+        """
+        将按word读取到的数据格式化为地址/十六进制/十进制明细。
+        协议数据为小端，按2字节一个word解析。
+        """
+        lines = ["地址    十六进制    十进制"]
+        word_count = len(data) // 2
+        for i in range(word_count):
+            word = int.from_bytes(data[i * 2:(i + 1) * 2], byteorder='little', signed=False)
+            lines.append(f"{start_addr_word + i}   0x{word:04x}   {word:>6}")
+        return "\n".join(lines)
+
+    @staticmethod
     def _calc_chk(frame_without_chk: bytes) -> int:
         """
         CHK算法：对帧内全部字节（不含CHK）求和，取8位二补数。
@@ -457,7 +470,8 @@ class XCPProtocol:
             return False, f"读取失败: {err}", tx_hex, rx_hex
 
         formatted = ' '.join(f'{b:02X}' for b in data)
-        return True, f"读取成功\n地址(word): {address}\n长度(word): {length}\n数据: {formatted}", tx_hex, rx_hex
+        words_detail = self._format_word_lines(address, data)
+        return True, f"读取成功 地址(word): {address} 长度(word): {length} 数据: {formatted}\n{words_detail}", tx_hex, rx_hex
 
     def read_var(self, address: int, length: int) -> Tuple[bool, str, str, str]:
         """
@@ -499,7 +513,8 @@ class XCPProtocol:
             return False, f"读取VAR失败: {err}", tx_hex, rx_hex
 
         formatted = ' '.join(f'{b:02X}' for b in data)
-        return True, f"读取VAR成功\n地址(word): {address}\n长度(word): {length}\n数据: {formatted}", tx_hex, rx_hex
+        words_detail = self._format_word_lines(address, data)
+        return True, f"读取VAR成功 地址(word): {address} 长度(word): {length} 数据: {formatted}\n{words_detail}", tx_hex, rx_hex
     
     def write_eeprom(self, address: int, data: int, timeout: float = 12.0) -> Tuple[bool, str, str, str]:
         """
