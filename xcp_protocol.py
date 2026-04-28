@@ -15,7 +15,10 @@ class XCPProtocol:
     
     # 命令定义 (HEX: 50 43 50 53 59 46 0D 0A)
     CMD_UNLOCK = bytes([0x50, 0x43, 0x50, 0x53, 0x59, 0x46, 0x0D, 0x0A])
+    CMD_EXIT_TEST = bytes([0x50, 0x43, 0x50, 0x53, 0x59, 0x54, 0x0D, 0x0A, 0x0D, 0x0A])
     CMD_UNLOCK_VERIFY = bytes([0xAB, 0x04, 0xCF, 0x00, 0x00, 0x00, 0x82])
+    RESP_EXIT_BACK_TO_PE = b"Send Cmd fail,back to the PE Protocol\r\n"
+    RESP_EXIT_TEST_MODE = b"Exit test mode\r\n"
     RESP_UNLOCK_OK_PREFIX = bytes([0xAB, 0xCF, 0x22, 0x81, 0x01])
     RESP_UNLOCK_FAIL_PREFIX = bytes([0xAB, 0x09, 0x05, 0x81])    
     FUNC_C9_READ_MEM = 0x52
@@ -361,8 +364,8 @@ class XCPProtocol:
         expected_addr = expected_addr_words * 2
         if addr_bytes != expected_addr:
             return False, f"响应地址不匹配(期望{expected_addr}, 实际{addr_bytes})"
-        if size_bytes != expected_size_bytes:
-            return False, f"响应长度不匹配(期望{expected_size_bytes}, 实际{size_bytes})"
+        # if size_bytes != expected_size_bytes:
+        #     return False, f"响应长度不匹配(期望{expected_size_bytes}, 实际{size_bytes})"
 
         if resp_code in (0x58, 0x57):
             return True, f"RespCode: {resp_code:02X}"
@@ -428,6 +431,30 @@ class XCPProtocol:
 
         self.is_unlocked = False
         return False, f"验证失败，无响应（已重试{max_retries}次）", tx_hex, "(无响应)"
+
+    def send_exit_test_mode(self) -> Tuple[bool, str, str, str]:
+        """
+        发送退出测试模式命令(PCPSYT)。
+        返回两类响应之一即判定已退回PE协议：
+        1) Send Cmd fail,back to the PE Protocol
+        2) Exit test mode
+        """
+        if not self.is_connected:
+            return True, "未连接串口，可直接退出", "", ""
+
+        tx_data = self.CMD_EXIT_TEST
+        tx_hex = self._bytes_to_hex(tx_data)
+        success, response = self._send_and_receive(tx_data, timeout=2.5)
+
+        if not success or not response:
+            return False, "退出命令发送后无响应，未确认退回PE协议", tx_hex, "(无响应)"
+
+        rx_hex = self._bytes_to_hex(response)
+        if response.startswith(self.RESP_EXIT_BACK_TO_PE) or response.startswith(self.RESP_EXIT_TEST_MODE):
+            self.is_unlocked = False
+            return True, "设备已退回PE协议，可退出软件", tx_hex, rx_hex
+
+        return False, "退出命令响应不符合预期，未确认退回PE协议", tx_hex, rx_hex
     
     def read_eeprom(self, address: int, length: int) -> Tuple[bool, str, str, str]:
         """
@@ -555,7 +582,7 @@ class XCPProtocol:
         """
         写入参数信息
         :param pn: P/N码
-        :param sn: S/N序列号 (14位)
+        :param sn: S/N序列号
         :param kva: 功率
         :return: (成功标志, 消息, 发送报文HEX, 接收报文HEX)
         """

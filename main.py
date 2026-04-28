@@ -39,7 +39,7 @@ class XCPToolWindow(QMainWindow):
         
     def init_ui(self):
         """初始化界面"""
-        self.setWindowTitle("CPSY XCP tool")
+        self.setWindowTitle("CPSY Config Tool")
         window_icon = self._load_logo_icon()
         if not window_icon.isNull():
             self.setWindowIcon(window_icon)
@@ -379,7 +379,7 @@ class XCPToolWindow(QMainWindow):
         
         layout.addWidget(QLabel("S/N:"), 0, 2)
         self.sn_input = QLineEdit()
-        self.sn_input.setPlaceholderText("14位序列号")
+        self.sn_input.setPlaceholderText("序列号")
         self.sn_input.setMaxLength(14)
         layout.addWidget(self.sn_input, 0, 3)
         
@@ -494,7 +494,7 @@ class XCPToolWindow(QMainWindow):
         if unlocked is None:
             unlocked = self.xcp.is_unlocked
             
-        self.unlock_btn.setEnabled(connected)
+        self.unlock_btn.setEnabled(connected and (not unlocked))
         self.verify_btn.setEnabled(connected)
         
         self.read_eep_btn.setEnabled(connected and unlocked)
@@ -520,22 +520,22 @@ class XCPToolWindow(QMainWindow):
         self.log("发送解锁命令...")
         success, msg, tx_data, rx_data = self.xcp.send_unlock()
         if success:
-            self.log(f"TX >> {tx_data}", "INFO")
-            self.log(f"RX << {rx_data}", "SUCCESS")
+            # self.log(f"TX >> {tx_data}", "INFO")
+            # self.log(f"RX << {rx_data}", "SUCCESS")
             self.log(msg, "SUCCESS")
         else:
-            if tx_data:
-                self.log(f"TX >> {tx_data}", "INFO")
+            # if tx_data:
+            #     self.log(f"TX >> {tx_data}", "INFO")
             self.log(msg, "ERROR")
     
     def verify_unlock(self):
         """验证解锁状态"""
         self.log("验证解锁状态...")
         success, msg, tx_data, rx_data = self.xcp.verify_unlock()
-        if tx_data:
-            self.log(f"TX >> {tx_data}", "INFO")
-        if rx_data:
-            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        # if tx_data:
+        #     self.log(f"TX >> {tx_data}", "INFO")
+        # if rx_data:
+        #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
 
         if success:
             self.log(msg, "SUCCESS")
@@ -556,10 +556,10 @@ class XCPToolWindow(QMainWindow):
         
         self.log(f"读取EEP: 地址={addr}, 长度={length}")
         success, msg, tx_data, rx_data = self.xcp.read_eeprom(addr, length)
-        if tx_data:
-            self.log(f"TX >> {tx_data}", "INFO")
-        if rx_data:
-            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        # if tx_data:
+        #     self.log(f"TX >> {tx_data}", "INFO")
+        # if rx_data:
+        #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
         else:
@@ -576,10 +576,10 @@ class XCPToolWindow(QMainWindow):
 
         self.log(f"读取VAR: 地址={addr}, 长度={length}")
         success, msg, tx_data, rx_data = self.xcp.read_var(addr, length)
-        if tx_data:
-            self.log(f"TX >> {tx_data}", "INFO")
-        if rx_data:
-            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        # if tx_data:
+        #     self.log(f"TX >> {tx_data}", "INFO")
+        # if rx_data:
+        #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
         else:
@@ -599,10 +599,10 @@ class XCPToolWindow(QMainWindow):
         QApplication.processEvents()
         
         success, msg, tx_data, rx_data = self.xcp.write_eeprom(addr, data)
-        if tx_data:
-            self.log(f"TX >> {tx_data}", "INFO")
-        if rx_data:
-            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        # if tx_data:
+        #     self.log(f"TX >> {tx_data}", "INFO")
+        # if rx_data:
+        #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
             self.update_status("写入完成")
@@ -622,10 +622,10 @@ class XCPToolWindow(QMainWindow):
             QApplication.processEvents()
             
             success, msg, tx_data, rx_data = self.xcp.factory_reset()
-            if tx_data:
-                self.log(f"TX >> {tx_data}", "INFO")
-            if rx_data:
-                self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+            # if tx_data:
+            #     self.log(f"TX >> {tx_data}", "INFO")
+            # if rx_data:
+            #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
             if success:
                 self.log(msg, "SUCCESS")
                 self.update_status("恢复出厂设置完成")
@@ -645,10 +645,10 @@ class XCPToolWindow(QMainWindow):
             QApplication.processEvents()
             
             success, msg, tx_data, rx_data = self.xcp.reset_mcu()
-            if tx_data:
-                self.log(f"TX >> {tx_data}", "INFO")
-            if rx_data:
-                self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+            # if tx_data:
+            #     self.log(f"TX >> {tx_data}", "INFO")
+            # if rx_data:
+            #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
             if success:
                 self.log(msg, "SUCCESS")
                 self.update_status("MCU复位完成")
@@ -677,10 +677,10 @@ class XCPToolWindow(QMainWindow):
         QApplication.processEvents()
         
         success, msg, tx_data, rx_data = self.xcp.write_conf(pn, sn, kva)
-        if tx_data:
-            self.log(f"TX >> {tx_data}", "INFO")
-        if rx_data:
-            self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+        # if tx_data:
+        #     self.log(f"TX >> {tx_data}", "INFO")
+        # if rx_data:
+        #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
         if success:
             self.log(msg, "SUCCESS")
             self.update_status("参数写入完成")
@@ -701,12 +701,34 @@ class XCPToolWindow(QMainWindow):
         )
         if reply == QMessageBox.Yes:
             if self.xcp.is_connected:
+                self.log("退出前发送退回PE协议命令...")
+                success, msg, tx_data, rx_data = self.xcp.send_exit_test_mode()
+                # if tx_data:
+                #     self.log(f"TX >> {tx_data}", "INFO")
+                # if rx_data:
+                #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+                if not success:
+                    self.log(msg, "ERROR")
+                    QMessageBox.warning(self, "无法退出", "未收到有效退回PE协议响应，已取消退出。")
+                    return
+                self.log(msg, "SUCCESS")
                 self.xcp.disconnect()
             QApplication.quit()
     
     def closeEvent(self, event):
         """关闭事件处理"""
         if self.xcp.is_connected:
+            success, msg, tx_data, rx_data = self.xcp.send_exit_test_mode()
+            # if tx_data:
+            #     self.log(f"TX >> {tx_data}", "INFO")
+            # if rx_data:
+            #     self.log(f"RX << {rx_data}", "SUCCESS" if success else "WARN")
+            if not success:
+                self.log(msg, "ERROR")
+                QMessageBox.warning(self, "无法退出", "未收到有效退回PE协议响应，已取消退出。")
+                event.ignore()
+                return
+            self.log(msg, "SUCCESS")
             self.xcp.disconnect()
         event.accept()
 
